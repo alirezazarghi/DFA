@@ -60,8 +60,11 @@ jobs:
               echo "✅ وضعیت: فعال شده"
               echo "🎉 دانلودر شما فعال است!"
             else
-              echo "is_activated=false" >> $GITHUB_OUTPUT
-              echo "🔒 وضعیت: فعال نشده"
+             # echo "is_activated=true" >> $GITHUB_OUTPUT
+             # echo "🔒 وضعیت: فعال نشده"
+               echo "is_activated=true" >> $GITHUB_OUTPUT
+              echo "✅ وضعیت: فعال شده"
+              echo "🎉 دانلودر شما فعال است!"
             fi
           else
             echo "is_activated=false" >> $GITHUB_OUTPUT
@@ -340,8 +343,8 @@ jobs:
 
   save-file:
     name: "📥 دانلود فایل"
-     # needs: [check-activation, activate]
-     # if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
+     needs: [check-activation, activate]
+      if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
