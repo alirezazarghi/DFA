@@ -340,8 +340,8 @@ jobs:
 
   save-file:
     name: "📥 دانلود فایل"
-    needs: [check-activation, activate]
-    if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
+     # needs: [check-activation, activate]
+     # if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
