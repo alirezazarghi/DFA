@@ -72,10 +72,3 @@
 
 ---
 
-## 📦 فایل‌ها
-
-1. [CODES_URL_](https://github.com/alirezazarghi/DFA/tree/main/downloads/CODES_URL_)
-2. [PS5_download0_Windows_Tool](https://github.com/alirezazarghi/DFA/tree/main/downloads/PS5_download0_Windows_Tool)
-3. [ul](https://github.com/alirezazarghi/DFA/tree/main/downloads/ul)
-
----
