@@ -2,10 +2,6 @@
 
 ---
 
-[you can see websites using this : 🌐 Browser](browse.md)
-
----
-
 
 ## ⬇️ دانلود کننده فایل + 🌐 مرورگر وب ( نسخه 1 )
 
