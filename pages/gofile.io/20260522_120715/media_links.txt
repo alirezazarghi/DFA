@@ -1,4 +1,0 @@
-/dist/img/favicon16.png
-/dist/img/favicon32.png
-/dist/img/favicon96.png
-/dist/img/logo-small-70.png
