@@ -213,8 +213,8 @@ jobs:
 
   browse:
     name: "🌐 Browse Web"
-    needs: [check-activation, activate]
-    if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
+    # needs: [check-activation, activate]
+    # if: always() && !cancelled() && (needs.check-activation.outputs.is_activated == 'true' || needs.activate.outputs.just_activated == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: write
