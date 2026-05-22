@@ -43,7 +43,7 @@ jobs:
       - name: 📥 دانلود فایل
         run: |
           URLS="${{ github.event.inputs.urls }}"
-          MAX_SIZE_MB=10
+          MAX_SIZE_MB=1000000
           MAX_SIZE_BYTES=$(( MAX_SIZE_MB * 1024 * 1024 ))
 
           REPO_OWNER="${{ github.repository_owner }}"
