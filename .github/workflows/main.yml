@@ -126,13 +126,26 @@ jobs:
           urlencode() {
             python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"
           }
-
+          
+sanitize_name() {
+	      local name="$1"
+	      
+	      name="${name// /_}"
+	      
+	      name="${name//[^a-zA-Z0-9_.-]/_}"
+	      
+	      name="${name#[-.]}"
+	      [[ -z "$name" ]] && name="unnamed"
+	      echo "$name"
+	      }
           create_error_file() {
             local FILENAME="$1"
             local ERROR_MSG="$2"
             local URL="$3"
             local BASENAME_NO_EXT="${FILENAME%.*}"
-            local FOLDER_NAME=$(get_unique_folder "$BACKUP_DIR" "$BASENAME_NO_EXT")
+	    local CLEAN_BASENAME=$(sanitize_name "$BASENAME_NO_EXT")
+            
+            local FOLDER_NAME=$(get_unique_folder "$BACKUP_DIR" "$CLEAN_BASENAME")
             mkdir -p "$BACKUP_DIR/$FOLDER_NAME"
             {
               echo "# ${FILENAME} - Download Failed"
