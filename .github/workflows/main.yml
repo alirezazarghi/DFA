@@ -128,11 +128,11 @@ jobs:
           }
 
           create_error_file() {
-            local FILENAME="${1[^a-zA-Z0-9_.-]/_}"
+            local FILENAME="$1"
             local ERROR_MSG="$2"
             local URL="$3"
             local BASENAME_NO_EXT="${FILENAME%.*}" 
-            local FOLDER_NAME=$(get_unique_folder "$BACKUP_DIR" "${BASENAME_NO_EXT// /_}")
+            local FOLDER_NAME=$(get_unique_folder "$BACKUP_DIR" "$BASENAME_NO_EXT")
             mkdir -p "$BACKUP_DIR/$FOLDER_NAME"
             {
               echo "# ${FILENAME} - Download Failed"
