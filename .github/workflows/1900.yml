@@ -1,4 +1,4 @@
-```yaml
+
 name: 🔥 دانلود قطعه‌قطعه و آپلود در Release
 
 on:
@@ -93,6 +93,4 @@ jobs:
           done
         env:
           : ${{ secrets.GITHUB_TOKEN }}
-```
 
----
