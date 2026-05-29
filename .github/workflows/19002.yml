@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: بررسی ورودی‌ها
         run: |
-          CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
+          _MB=${{ github.event.inputs.chunk_size }}
           if [ "$CHUNK_SIZE_MB" -gt 1900 ]; then
             echo "حداکثر اندازه قطعه 1900 مگابایت است (محدودیت GitHub Release)"
             exit 1
@@ -99,7 +99,7 @@ jobs:
           REPO="${{ github.repository }}"
 
           for (( i=START_INDEX; i<=END_INDEX; i++ )); do
-            START=$(( i  CHUNK_SIZE ))
+            START=$(( i * CHUNK_SIZE ))
             END=$(( START + CHUNK_SIZE - 1 ))
             if [ $END -ge $TOTAL_SIZE ]; then
               END=$(( TOTAL_SIZE - 1 ))
