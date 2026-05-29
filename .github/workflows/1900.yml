@@ -1,3 +1,4 @@
+---
 name: 🔥 دانلود قطعه‌قطعه و آپلود در Release
 
 on:
@@ -90,6 +91,6 @@ jobs:
             rm -f "$FILENAME"
             echo "قطعه $((i+1)) با موفقیت آپلود و پاک شد."
           done
-        env:
-          : ${{ secrets.GITHUB_TOKEN }}
+       env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
