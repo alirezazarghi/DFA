@@ -25,6 +25,7 @@ jobs:
     timeout-minutes: 360
     permissions:
       issues: write  
+      contents: write
     steps:
       - name: بررسی ورودی‌ها
         run: |
@@ -54,8 +55,7 @@ jobs:
           tag_name: ${{ github.event.inputs.tag }}
           name: "بخش‌های فایل ${{ github.event.inputs.tag }}"
           body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
-          draft: false
-          prerelease: false
+          
 
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
