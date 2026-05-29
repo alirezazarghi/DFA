@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
-      contents: write
       issues: write  
     steps:
       - name: بررسی ورودی‌ها
@@ -50,14 +49,16 @@ jobs:
       - name: ایجاد Release
         id: create_release
         uses: softprops/action-gh-release@v2
+       
         with:
           tag_name: ${{ github.event.inputs.tag }}
           name: "بخش‌های فایل ${{ github.event.inputs.tag }}"
           body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
           draft: false
           prerelease: false
+
         env:
-           GH_TOKEN: ${{ github.token }} 
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: دانلود و آپلود قطعات
         run: |
