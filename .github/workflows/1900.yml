@@ -1,0 +1,98 @@
+```yaml
+name: 🔥 دانلود قطعه‌قطعه و آپلود در Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'لینک مستقیم فایل'
+        required: true
+        type: string
+      chunk_size:
+        description: 'اندازه هر قطعه (مگابایت، حداکثر 1900)'
+        required: true
+        default: '1900'
+        type: string
+      tag:
+        description: 'نام Release (مثلاً v1.0 یا file-parts)'
+        required: true
+        default: 'file-parts'
+        type: string
+
+jobs:
+  chunked-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    steps:
+      - name: بررسی ورودی‌ها
+        run: |
+          CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
+          if [ "$CHUNK_SIZE_MB" -gt 1900 ]; then
+            echo "حداکثر اندازه قطعه 1900 مگابایت است (محدودیت GitHub Release)"
+            exit 1
+          fi
+
+      - name: دریافت حجم فایل
+        id: filesize
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          SIZE=$(curl -sI -L "$URL" | grep -i content-length | tail -1 | awk '{print $2}' | tr -d '\r')
+          if [ -z "$SIZE" ]; then
+            echo "خطا: نتوانستم حجم فایل را تشخیص دهم"
+            exit 1
+          fi
+          echo "total_size=$SIZE" >> $GITHUB_OUTPUT
+          echo "حجم کل فایل: $(( SIZE / 1024 / 1024 )) مگابایت"
+
+      - name: ایجاد Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: "بخش‌های فایل ${{ github.event.inputs.tag }}"
+          body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: دانلود و آپلود قطعات
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          TOTAL_SIZE=${{ steps.filesize.outputs.total_size }}
+          CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
+          CHUNK_SIZE=$(( CHUNK_SIZE_MB * 1024 * 1024 ))
+          NUM_CHUNKS=$(( (TOTAL_SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE ))
+
+          echo "تعداد قطعات: $NUM_CHUNKS"
+          RELEASE_ID="${{ steps.create_release.outputs.id }}"
+          REPO="${{ github.repository }}"
+
+          for (( i=0; i<NUM_CHUNKS; i++ )); do
+            START=$(( i * CHUNK_SIZE ))
+            END=$(( START + CHUNK_SIZE - 1 ))
+            if [ $END -ge $TOTAL_SIZE ]; then
+              END=$(( TOTAL_SIZE - 1 ))
+            fi
+
+            FILENAME="part_$(printf "%04d" $i)"
+            echo "دانلود قطعه $((i+1))/$NUM_CHUNKS ($(( (END-START+1) / 1024 / 1024 )) مگابایت)..."
+
+            # دانلود قطعه با curl و هدر Range
+            curl -L -f --retry 5 --retry-delay 10 -H "Range: bytes=$START-$END" -o "$FILENAME" "$URL"
+
+            # آپلود قطعه به Release
+            echo "آپلود قطعه به GitHub Release..."
+            gh release upload "${{ github.event.inputs.tag }}" "$FILENAME" --repo "$REPO" --clobber
+
+            # حذف فایل محلی
+            rm -f "$FILENAME"
+            echo "قطعه $((i+1)) با موفقیت آپلود و پاک شد."
+          done
+        env:
+          : ${{ secrets.GITHUB_TOKEN }}
+```
+
+---
