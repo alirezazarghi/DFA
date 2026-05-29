@@ -73,7 +73,7 @@ jobs:
           URL="${{ github.event.inputs.url }}"
           TOTAL_SIZE=${{ steps.filesize.outputs.total_size }}
           CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
-          CHUNK_SIZE=$(( CHUNK_SIZE_MB  1024  1024 ))
+          CHUNK_SIZE=$(( CHUNK_SIZE_MB * 1024 * 1024 ))
           NUM_CHUNKS=$(( (TOTAL_SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE ))
 
           # مدیریت ورودی part
