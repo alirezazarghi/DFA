@@ -1,0 +1,181 @@
+name: 🔥-- v3 دانلود قطعه‌قطعه و آپلود جداگانه در Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'لینک مستقیم فایل'
+        required: true
+        type: string
+      chunk_size:
+        description: 'اندازه هر قطعه (مگابایت، حداکثر 1900)'
+        required: true
+        default: '1900'
+        type: string
+      part:
+        description: 'شماره پارت یا بازه (مثلاً 5 یا 10-15، خالی = همه)'
+        required: false
+        type: string
+      overwrite:
+        description: 'بازنویسی ریلیزهای قبلی؟'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  chunked-upload:
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+
+    steps:
+      - name: بررسی اندازه قطعه
+        run: |
+          CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
+          if [ "$CHUNK_SIZE_MB" -gt 1900 ]; then
+            echo "حداکثر اندازه قطعه 1900 مگابایت است"
+            exit 1
+          fi
+
+      - name: استخراج نام فایل از URL
+        id: filename
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          RAW_NAME=$(basename "$URL" | cut -d'?' -f1)
+          if [ -z "$RAW_NAME" ]; then
+            echo "خطا: نتوانستم نام فایل را از URL استخراج کنم"
+            exit 1
+          fi
+          echo "name=$RAW_NAME" >> $GITHUB_OUTPUT
+          echo "نام فایل: $RAW_NAME"
+
+      - name: دریافت حجم فایل
+        id: filesize
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          SIZE=$(curl -sI -L "$URL" | grep -i content-length | tail -1 | awk '{print $2}' | tr -d '\r')
+          if [ -z "$SIZE" ]; then
+            echo "خطا: نتوانستم حجم فایل را تشخیص دهم"
+            exit 1
+          fi
+          echo "total_size=$SIZE" >> $GITHUB_OUTPUT
+          echo "حجم کل: $(( SIZE / 1024 / 1024 )) مگابایت"
+
+      - name: دانلود و آپلود هر قطعه در ریلیز جداگانه
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          TOTAL_SIZE=${{ steps.filesize.outputs.total_size }}
+          CHUNK_SIZE_MB=${{ github.event.inputs.chunk_size }}
+          CHUNK_SIZE=$(( CHUNK_SIZE_MB  1024  1024 ))
+          NUM_CHUNKS=$(( (TOTAL_SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE ))
+          FILENAME="${{ steps.filename.outputs.name }}"
+          OVERWRITE="${{ github.event.inputs.overwrite }}"   # 'true' یا 'false'
+
+          # حذف فاصله‌های احتمالی از ورودی part
+          PART_INPUT=$(echo "${{ github.event.inputs.part }}" | tr -d '[:space:]')
+
+          if [ -n "$PART_INPUT" ] && [ "$PART_INPUT" != "all" ]; then
+            if [[ "$PART_INPUT" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+              START_PART="${BASH_REMATCH[1]}"
+              END_PART="${BASH_REMATCH[2]}"
+              if [ "$START_PART" -gt "$END_PART" ]; then
+                echo "شروع بازه نباید بزرگتر از پایان باشد"
+                exit 1
+              fi
+              if [ "$START_PART" -lt 0 ] || [ "$END_PART" -ge "$NUM_CHUNKS" ]; then
+                echo "بازه ($START_PART-$END_PART) خارج از محدوده (0 تا $((NUM_CHUNKS-1)))"
+                exit 1
+              fi
+              START_INDEX=$START_PART
+              END_INDEX=$END_PART
+            elif [[ "$PART_INPUT" =~ ^[0-9]+$ ]]; then
+              P=$(( PART_INPUT ))
+              if [ "$P" -lt 0 ] || [ "$P" -ge "$NUM_CHUNKS" ]; then
+                echo "پارت $P خارج از محدوده"
+                exit 1
+              fi
+              START_INDEX=$P
+              END_INDEX=$P
+            else
+              echo "فرمت نامعتبر. عدد تنها یا بازه (مثل 5 یا 10-15) وارد کنید"
+              exit 1
+            fi
+          else
+            START_INDEX=0
+            END_INDEX=$(( NUM_CHUNKS - 1 ))
+          fi
+
+          echo "تعداد کل قطعات: $NUM_CHUNKS"
+          echo "قطعات انتخاب‌شده: $START_INDEX تا $END_INDEX"
+
+          REPO="${{ github.repository }}"
+
+          for (( i=START_INDEX; i<=END_INDEX; i++ )); do
+            START=$(( i * CHUNK_SIZE ))
+            END=$(( START + CHUNK_SIZE - 1 ))
+            if [ $END -ge $TOTAL_SIZE ]; then
+              END=$(( TOTAL_SIZE - 1 ))
+
+            fi
+
+            PART_FILE="part_$(printf "%04d" $i)"
+            EXPECTED_SIZE=$(( END - START + 1 ))
+
+            echo "⬇️ دانلود قطعه $i ($(( EXPECTED_SIZE / 1024 / 1024 )) مگابایت)..."
+            HTTP_CODE=$(curl -L --retry 5 --retry-delay 10 \
+              -H "Range: bytes=$START-$END" \
+              -o "$PART_FILE" \
+              -w "%{http_code}" \
+              "$URL")
+
+            if [ "$HTTP_CODE" != "206" ] && [ "$HTTP_CODE" != "200" ]; then
+              echo "❌ کد HTTP نامعتبر: $HTTP_CODE"
+              exit 1
+            fi
+            if [ $i -ne $(( NUM_CHUNKS - 1 )) ] && [ "$HTTP_CODE" != "206" ]; then
+              echo "❌ سرور از Range پشتیبانی نمی‌کند (206 دریافت نشد)"
+              exit 1
+            fi
+
+            ACTUAL_SIZE=$(stat -c%s "$PART_FILE")
+            if [ $ACTUAL_SIZE -ne $EXPECTED_SIZE ]; then
+              if [ $i -ne $(( NUM_CHUNKS - 1 )) ] || [ "$HTTP_CODE" != "200" ]; then
+                echo "❌ اندازه دانلود ($ACTUAL_SIZE) با اندازه انتظاری ($EXPECTED_SIZE) مغایرت دارد"
+                exit 1
+              else
+                echo "⚠️ سرور کل فایل را با کد 200 برگردانده، اندازه: $ACTUAL_SIZE"
+              fi
+            fi
+
+            # تعیین نام تگ
+            PADDED=$(printf "%04d" $i)
+            BASE_TAG="${FILENAME}.part${PADDED}"
+
+            if [ "$OVERWRITE" == "true" ]; then
+              # بازنویسی: تگ قبلی حذف و با همین نام ساخته شود
+              TAG_NAME="$BASE_TAG"
+              echo "📦 حالت بازنویسی - حذف تگ و ریلیز قبلی ${TAG_NAME} (در صورت وجود)"
+              gh release delete "$TAG_NAME" --yes --repo "$REPO" 2>/dev/null || true
+              git push origin ":refs/tags/$TAG_NAME" 2>/dev/null || true
+            else
+              # عدم بازنویسی: اضافه کردن پسوند زمان به تگ برای یکتایی
+              TIMESTAMP=$(date +%Y%m%d%H%M%S)
+              TAG_NAME="${BASE_TAG}-${TIMESTAMP}"
+              echo "📦 حالت عدم بازنویسی - تگ جدید: $TAG_NAME"
+            fi
+
+            RELEASE_TITLE="${FILENAME} - Part $i"
+            RELEASE_NOTES="قطعه $i از فایل *${FILENAME}*  \nحجم: ${EXPECTED_SIZE} بایت"
+
+            echo "📦 ساخت ریلیز $TAG_NAME ..."
+            gh release create "$TAG_NAME" "$PART_FILE" \
+              --repo "$REPO" \
+              --title "$RELEASE_TITLE" \
+              --notes "$RELEASE_NOTES"
+
+            rm -f "$PART_FILE"
+            echo "✅ پارت $i آپلود و پاک شد."
+          done
