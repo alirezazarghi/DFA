@@ -152,7 +152,8 @@ jobs:
 
             # تعیین نام تگ
             PADDED=$(printf "%04d" $i)
-            BASE_TAG="${FILENAME}.part${PADDED}"
+            #BASE_TAG="${FILENAME}.part${PADDED}"
+            BASE_TAG="part${PADDED}"
 
             if [ "$OVERWRITE" == "true" ]; then
               # بازنویسی: تگ قبلی حذف و با همین نام ساخته شود
@@ -167,7 +168,8 @@ jobs:
               echo "📦 حالت عدم بازنویسی - تگ جدید: $TAG_NAME"
             fi
 
-            RELEASE_TITLE="${FILENAME} - Part $i"
+            #RELEASE_TITLE="${FILENAME} - Part $i"
+             RELEASE_TITLE="Part $i"
             RELEASE_NOTES="قطعه $i از فایل *${FILENAME}*  \nحجم: ${EXPECTED_SIZE} بایت"
 
             echo "📦 ساخت ریلیز $TAG_NAME ..."
