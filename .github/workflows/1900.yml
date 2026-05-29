@@ -21,6 +21,8 @@ on:
 
 jobs:
   chunked-upload:
+    env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
     runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
@@ -52,14 +54,14 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         
+          
         with:
           tag_name: ${{ github.event.inputs.tag }}
           name: "بخش‌های فایل ${{ github.event.inputs.tag }}"
           body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
           
       - name: دانلود و آپلود قطعات
-       env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+     
         run: |
           URL="${{ github.event.inputs.url }}"
           TOTAL_SIZE=${{ steps.filesize.outputs.total_size }}
