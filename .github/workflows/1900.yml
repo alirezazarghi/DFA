@@ -26,6 +26,8 @@ jobs:
     permissions:
       issues: write  
       contents: write
+     env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
     steps:
       - name: بررسی ورودی‌ها
         run: |
@@ -56,10 +58,6 @@ jobs:
           name: "بخش‌های فایل ${{ github.event.inputs.tag }}"
           body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
           
-
-        env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: دانلود و آپلود قطعات
         run: |
           URL="${{ github.event.inputs.url }}"
