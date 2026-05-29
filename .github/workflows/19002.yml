@@ -1,4 +1,4 @@
-name: 🔥 دانلود قطعه‌قطعه و آپلود در Release
+name: 🔥 -- v2 دانلود قطعه‌قطعه و آپلود در Release 
 
 on:
   workflow_dispatch:
