@@ -25,6 +25,9 @@ jobs:
     timeout-minutes: 360
     permissions:
       contents: write
+      issues: write          # برای gh issue create
+     
+
     steps:
       - name: بررسی ورودی‌ها
         run: |
@@ -55,10 +58,11 @@ jobs:
           body: "قطعات فایل **${{ github.event.inputs.url }}** ($(( ${{ steps.filesize.outputs.total_size }} / 1024 / 1024 )) مگابایت)"
           draft: false
           prerelease: false
-        env:
-           GH_TOKEN: ${{ github.token }}
+       
 
       - name: دانلود و آپلود قطعات
+       env:
+           GH_TOKEN: ${{ github.token }} 
         run: |
           URL="${{ github.event.inputs.url }}"
           TOTAL_SIZE=${{ steps.filesize.outputs.total_size }}
