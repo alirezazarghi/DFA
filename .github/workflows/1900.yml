@@ -91,6 +91,5 @@ jobs:
             rm -f "$FILENAME"
             echo "قطعه $((i+1)) با موفقیت آپلود و پاک شد."
           done
-       env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   
 
